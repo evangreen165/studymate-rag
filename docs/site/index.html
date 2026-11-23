@@ -116,10 +116,10 @@
         <p>Оценка на отложенной тестовой выборке из 30 вопросов, судья — Llama-3.1-70B.</p>
       </div>
       <div class="metrics" id="metrics-grid">
-        <div><span>Faithfulness</span><strong id="m-faith">—</strong><small>цель ≥ 0,80</small></div>
-        <div><span>Answer Relevancy</span><strong id="m-rel">—</strong><small>цель ≥ 0,75</small></div>
-        <div><span>Context Precision</span><strong id="m-prec">—</strong><small>дополнительная</small></div>
-        <div><span>Context Recall</span><strong id="m-rec">—</strong><small>дополнительная</small></div>
+        <div><span>Faithfulness</span><strong id="m-faith">0.885</strong><small>цель ≥ 0,80</small></div>
+        <div><span>Answer Relevancy</span><strong id="m-rel">0.807</strong><small>цель ≥ 0,75</small></div>
+        <div><span>Context Precision</span><strong id="m-prec">0.650</strong><small>дополнительная</small></div>
+        <div><span>Context Recall</span><strong id="m-rec">0.778</strong><small>дополнительная</small></div>
       </div>
       <div class="baseline">
         <h3>RAG против baseline</h3>
@@ -127,9 +127,9 @@
         <table>
           <thead><tr><th>Метрика</th><th>RAG</th><th>LLM без поиска</th></tr></thead>
           <tbody id="baseline-body">
-            <tr><td>Faithfulness</td><td>—</td><td>—</td></tr>
-            <tr><td>Answer Relevancy</td><td>—</td><td>—</td></tr>
-            <tr><td>Answer Correctness</td><td>—</td><td>—</td></tr>
+            <tr><td>Faithfulness</td><td>0.885</td><td>—</td></tr>
+            <tr><td>Answer Relevancy</td><td>0.807</td><td>0.858</td></tr>
+            <tr><td>Answer Correctness</td><td>0.517</td><td>0.447</td></tr>
           </tbody>
         </table>
       </div>

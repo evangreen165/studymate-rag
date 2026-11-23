@@ -1,0 +1,40 @@
+{
+  "runs": [
+    {
+      "concurrency": 1,
+      "requests": 10,
+      "errors": 0,
+      "elapsed_s": 18.04,
+      "rps": 0.554,
+      "p50_ms": 1778.4,
+      "p95_ms": 2352.0,
+      "mean_ms": 1804.4
+    },
+    {
+      "concurrency": 3,
+      "requests": 10,
+      "errors": 0,
+      "elapsed_s": 7.51,
+      "rps": 1.332,
+      "p50_ms": 1926.8,
+      "p95_ms": 2853.3,
+      "mean_ms": 2095.9
+    },
+    {
+      "concurrency": 5,
+      "requests": 10,
+      "errors": 0,
+      "elapsed_s": 7.15,
+      "rps": 1.4,
+      "p50_ms": 2851.1,
+      "p95_ms": 5424.3,
+      "mean_ms": 3222.6
+    }
+  ],
+  "p50_ms": 1778.4,
+  "p95_ms": 2352.0,
+  "rps": 1.4,
+  "ram_mb": 1385.8,
+  "startup_s": 0.0,
+  "model": ""
+}

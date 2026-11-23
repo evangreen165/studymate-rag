@@ -19,6 +19,7 @@ data/**/*.zip
 data/git.zip
 data/manifest_demo.json
 data/index_meta*.json
+data/index_meta_demo.json
 data/passport_demo.md
 data/cache/
 data/bm25_corpus*.json
@@ -64,5 +65,6 @@ desktop.ini
 ~$*
 docs/pz/out/
 docs/pz/preview/
+docs/presentation/preview/
 docs/presentation/out/
 docs/graphics/out/

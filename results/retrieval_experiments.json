@@ -1,0 +1,21 @@
+{
+  "top_k_3": {
+    "gold_hit": 0.533
+  },
+  "top_k_6": {
+    "gold_hit": 0.633
+  },
+  "top_k_8": {
+    "gold_hit": 0.633
+  },
+  "dense_only": {
+    "gold_hit": 0.133
+  },
+  "bm25_only": {
+    "gold_hit": 0.633
+  },
+  "hybrid": {
+    "gold_hit": 0.633
+  },
+  "n": 30
+}

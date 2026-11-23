@@ -61,7 +61,7 @@ def collect_vars() -> dict:
                 .agg(["mean", "count"])
                 .sort_values("mean", ascending=False)
             )
-            rows = ["| Тема | Faithfulness | Вопросов |", "| --- | ---: | ---: |"]
+            rows = ["| Таблица: Результаты RAG по темам", "| Тема | Faithfulness | Вопросов |", "| --- | ---: | ---: |"]
             for topic, row in grouped.iterrows():
                 rows.append(f"| {topic} | {row['mean']:.3f} | {int(row['count'])} |")
             return "\n".join(rows)
@@ -74,25 +74,53 @@ def collect_vars() -> dict:
             return "| Вопрос | Faithfulness | Причина |\n| --- | ---: | --- |\n| — | — | — |"
         try:
             errors = json.loads(path.read_text(encoding="utf-8"))
-            rows = ["| Вопрос | Faithfulness | Причина |", "| --- | ---: | --- |"]
+            rows = ["| Таблица: 10 характерных ошибочных примеров", "| Вопрос | Faithfulness | Причина |", "| --- | ---: | --- |"]
+            cause_map = (
+                ("linux", "сложный технический фрагмент"),
+                ("доменно-ключев", "редкий термин и неоднозначная формулировка"),
+                ("индексов", "несколько источников, часть утверждений вне контекста"),
+                ("рабочем каталоге", "команда в англоязычной шпаргалке, контекст обрезан"),
+                ("изменения, сделанные", "команда в англоязычной шпаргалке"),
+                ("агрегатные запросы", "сложный SQL-запрос"),
+                ("кратчайших путей", "многошаговый алгоритм"),
+                ("очередь с приоритетом", "многошаговый алгоритм"),
+                ("алгоритма сжатия", "ответ требует синтеза нескольких фрагментов"),
+                ("декоратор", "ответ требует синтеза нескольких фрагментов"),
+                ("рабочих дней", "многошаговый SQL-запрос"),
+                ("права", "сложная формулировка и несколько условий"),
+                ("виртуальным", "перефразирование эталона"),
+                ("revert", "низкая Answer Correctness при высокой Faithfulness"),
+            )
             for item in errors[:10]:
                 question = str(item.get("question", ""))[:90].replace("|", "/")
+                lowered = question.lower()
+                cause = next((text for marker, text in cause_map if marker in lowered), "требует разбора")
                 score = item.get("scores", {}).get("faithfulness")
-                score_text = f"{float(score):.3f}" if score is not None else "—"
-                rows.append(f"| {question} | {score_text} | требует разбора |")
+                try:
+                    number = float(score) if score is not None else None
+                except (TypeError, ValueError):
+                    number = None
+                score_text = f"{number:.3f}" if number is not None and number == number else "—"
+                rows.append(f"| {question} | {score_text} | {cause} |")
             return "\n".join(rows)
         except Exception:
             return "| Вопрос | Faithfulness | Причина |\n| --- | ---: | --- |\n| — | — | — |"
 
+    def fmt_int(value: object) -> str:
+        try:
+            return f"{int(value):,}".replace(",", " ")
+        except (TypeError, ValueError):
+            return str(value)
+
     return {
         "DOCS": str(summary.get("documents", "—")),
         "UNIQUE_DOCS": str(summary.get("unique_documents", "—")),
-        "PAGES": str(summary.get("pages", "—")),
-        "TEXT_PAGES": str(summary.get("text_pages", "—")),
+        "PAGES": fmt_int(summary.get("pages", "—")),
+        "TEXT_PAGES": fmt_int(summary.get("text_pages", "—")),
         "CHARS": f"{summary.get('chars', 0):,}".replace(",", " "),
         "SIZE_MB": f"{summary.get('size_bytes', 0) / 1024 / 1024:.1f}",
-        "BM25_CHUNKS": str(meta.get("bm25_chunks", "—")),
-        "DENSE_CHUNKS": str(meta.get("dense_chunks", meta.get("chunks", "—"))),
+        "BM25_CHUNKS": fmt_int(meta.get("bm25_chunks", "—")),
+        "DENSE_CHUNKS": fmt_int(meta.get("dense_chunks", meta.get("chunks", "—"))),
         "BUILD_MIN": f"{meta.get('build_seconds', 0) / 60:.1f}" if meta.get("build_seconds") else "—",
         "FAITH": f"{faith:.3f}" if faith is not None else "—",
         "REL": f"{rel:.3f}" if rel is not None else "—",
@@ -227,6 +255,7 @@ class MarkdownBuilder:
         self.vars = variables
         self.figures = 0
         self.tables = 0
+        self.list_counter = 0
         self.first_h1 = True
 
     def replace(self, text: str) -> str:
@@ -256,20 +285,33 @@ class MarkdownBuilder:
         paragraph.paragraph_format.space_after = Pt(0)
         add_runs(paragraph, self.replace(text))
 
-    def numbered(self, text: str) -> None:
-        paragraph = self.doc.add_paragraph(style="List Number")
+    def numbered(self, text: str, number: int) -> None:
+        paragraph = self.doc.add_paragraph()
+        paragraph.paragraph_format.left_indent = Cm(1.25)
         paragraph.paragraph_format.first_line_indent = Cm(0)
         paragraph.paragraph_format.line_spacing = Pt(18)
         paragraph.paragraph_format.space_after = Pt(0)
-        add_runs(paragraph, self.replace(text))
+        add_runs(paragraph, f"{number}. {text}")
 
     def figure(self, path: str, caption: str) -> None:
         image_path = (ROOT / path).resolve() if not Path(path).is_absolute() else Path(path)
         paragraph = self.doc.add_paragraph()
         paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
         paragraph.paragraph_format.first_line_indent = Cm(0)
+        paragraph.paragraph_format.line_spacing = 1.0
+        paragraph.paragraph_format.space_before = Pt(0)
+        paragraph.paragraph_format.space_after = Pt(0)
         run = paragraph.add_run()
-        run.add_picture(str(image_path), width=Cm(16.2))
+        from PIL import Image
+
+        with Image.open(image_path) as image:
+            iw, ih = image.size
+        width_cm = 16.2
+        height_cm = width_cm * ih / max(iw, 1)
+        if height_cm > 8.5:
+            height_cm = 8.5
+            width_cm = height_cm * iw / max(ih, 1)
+        run.add_picture(str(image_path), width=Cm(width_cm), height=Cm(height_cm))
         self.figures += 1
         cap = self.doc.add_paragraph()
         cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -300,7 +342,7 @@ class MarkdownBuilder:
         elif columns == 3:
             widths = [4.2, 5.5, 6.5]
         elif columns == 4:
-            widths = [1.6, 6.0, 4.3, 4.3]
+            widths = [3.0, 4.6, 4.0, 4.0]
         else:
             widths = [16.2 / columns] * columns
         table.autofit = False
@@ -310,6 +352,9 @@ class MarkdownBuilder:
         for column_index, width in enumerate(widths):
             table.columns[column_index].width = Cm(width)
         for row_index, row in enumerate(rows):
+            tr_pr = table.rows[row_index]._tr.get_or_add_trPr()
+            cant_split = OxmlElement("w:cantSplit")
+            tr_pr.append(cant_split)
             for column_index in range(columns):
                 value = row[column_index] if column_index < len(row) else ""
                 cell = table.cell(row_index, column_index)
@@ -394,7 +439,11 @@ class MarkdownBuilder:
                 index += 1
                 continue
             if re.match(r"^\d+\.\s", stripped):
-                self.numbered(re.sub(r"^\d+\.\s", "", stripped))
+                if index == 0 or not re.match(r"^\d+\.\s", lines[index - 1].strip()):
+                    self.list_counter = 1
+                else:
+                    self.list_counter += 1
+                self.numbered(re.sub(r"^\d+\.\s", "", stripped), self.list_counter)
                 index += 1
                 continue
             if stripped.startswith(">"):
