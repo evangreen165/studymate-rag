@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import matplotlib
 from reportlab.lib.enums import TA_JUSTIFY
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -13,13 +14,21 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 ROOT = Path(__file__).resolve().parents[1]
 DEMO = ROOT / "data" / "demo"
 
+MPL_FONTS = Path(matplotlib.get_data_path()) / "fonts" / "ttf"
+
 FONT_CANDIDATES = [
     Path(r"C:\Windows\Fonts\arial.ttf"),
     Path(r"C:\Windows\Fonts\DejaVuSans.ttf"),
+    Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+    Path("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"),
+    MPL_FONTS / "DejaVuSans.ttf",
 ]
 BOLD_CANDIDATES = [
     Path(r"C:\Windows\Fonts\arialbd.ttf"),
     Path(r"C:\Windows\Fonts\DejaVuSans-Bold.ttf"),
+    Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
+    Path("/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"),
+    MPL_FONTS / "DejaVuSans-Bold.ttf",
 ]
 
 
