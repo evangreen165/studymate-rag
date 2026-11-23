@@ -119,7 +119,8 @@ class IndexJobManager:
             if rebuild:
                 self._update(message="Очистка старого индекса…")
                 index.reset()
-            added = index.add_chunks(dense_chunks, progress=self._progress)
+            added = index.add_chunks(dense_chunks, progress=self._progress, upsert=not rebuild)
+            index.verify()
 
             bm25_chunks = chunks
             if not rebuild and doc_ids and self.settings.bm25_path.exists():
@@ -152,6 +153,7 @@ class IndexJobManager:
                 "rebuild": rebuild,
             }
             index.write_meta(meta)
+            index.close()
             self._update(
                 status="done",
                 progress=100,

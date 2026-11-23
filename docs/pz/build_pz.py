@@ -7,7 +7,7 @@ from pathlib import Path
 from docx import Document
 from docx.enum.section import WD_SECTION
 from docx.enum.table import WD_TABLE_ALIGNMENT
-from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK, WD_LINE_SPACING
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Cm, Pt, RGBColor
@@ -65,7 +65,7 @@ def collect_vars() -> dict:
             for topic, row in grouped.iterrows():
                 rows.append(f"| {topic} | {row['mean']:.3f} | {int(row['count'])} |")
             return "\n".join(rows)
-        except Exception:  # noqa: BLE001
+        except Exception:
             return "| Тема | Faithfulness | Вопросов |\n| --- | ---: | ---: |\n| — | — | — |"
 
     def errors_table() -> str:
@@ -81,7 +81,7 @@ def collect_vars() -> dict:
                 score_text = f"{float(score):.3f}" if score is not None else "—"
                 rows.append(f"| {question} | {score_text} | требует разбора |")
             return "\n".join(rows)
-        except Exception:  # noqa: BLE001
+        except Exception:
             return "| Вопрос | Faithfulness | Причина |\n| --- | ---: | --- |\n| — | — | — |"
 
     return {
@@ -124,6 +124,8 @@ def set_cell_text(cell, text: str, bold: bool = False, size: int = 12) -> None:
     cell.text = ""
     paragraph = cell.paragraphs[0]
     paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    paragraph.paragraph_format.first_line_indent = Cm(0)
+    paragraph.paragraph_format.left_indent = Cm(0)
     paragraph.paragraph_format.space_before = Pt(0)
     paragraph.paragraph_format.space_after = Pt(0)
     paragraph.paragraph_format.line_spacing = 1.0
@@ -293,16 +295,18 @@ class MarkdownBuilder:
         table.style = "Table Grid"
         table.alignment = WD_TABLE_ALIGNMENT.CENTER
         table.autofit = False
-        lengths = [
-            max(len(str(row[column_index])) if column_index < len(row) else 0 for row in rows)
-            for column_index in range(columns)
-        ]
-        weights = [max(6, min(70, length)) for length in lengths]
-        total_weight = sum(weights) or 1
-        available = 16.2
-        widths = [max(1.6, available * weight / total_weight) for weight in weights]
-        scale = available / sum(widths) if widths else 1
-        widths = [width * scale for width in widths]
+        if columns == 2:
+            widths = [3.5, 12.7]
+        elif columns == 3:
+            widths = [4.2, 5.5, 6.5]
+        elif columns == 4:
+            widths = [1.6, 6.0, 4.3, 4.3]
+        else:
+            widths = [16.2 / columns] * columns
+        table.autofit = False
+        layout = OxmlElement("w:tblLayout")
+        layout.set(qn("w:type"), "fixed")
+        table._tbl.tblPr.append(layout)
         for column_index, width in enumerate(widths):
             table.columns[column_index].width = Cm(width)
         for row_index, row in enumerate(rows):
@@ -445,8 +449,11 @@ def title_page(doc: Document) -> None:
         run.font.name = FONT
         run.font.size = Pt(13)
 
-    for _ in range(7):
+    for _ in range(4):
         doc.add_paragraph()
+    center("Защищено с оценкой: ______________________", 12, space_after=2)
+    center("(подпись)                              (расшифровка)", 9, space_after=8)
+    center("«____» ________________ 2027 г.", 12, space_after=40)
     center("Минск 2027", 13)
 
 

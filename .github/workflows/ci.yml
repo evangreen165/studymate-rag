@@ -43,7 +43,8 @@ jobs:
       - name: CLI smoke (mock embeddings, no network)
         run: |
           uv run python scripts/make_demo_corpus.py
-          uv run python -c "
+          MANIFEST_PATH=data/manifest_demo.json uv run python scripts/build_manifest.py --demo
+          MANIFEST_PATH=data/manifest_demo.json uv run python -c "
           from studymate.config import get_settings
           from studymate.chunking import collect_chunks
           from studymate.index import HashEmbedder, VectorIndex

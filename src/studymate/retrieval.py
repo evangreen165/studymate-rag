@@ -9,7 +9,7 @@ from rank_bm25 import BM25Okapi
 
 from .chunking import read_chunks_jsonl
 from .config import Settings, get_settings
-from .index import VectorIndex
+from .index import NumpyIndex, VectorIndex
 
 _TOKEN_RE = re.compile(r"[A-Za-zА-Яа-яЁё0-9_]{2,}")
 _STOPWORDS = {
@@ -89,7 +89,15 @@ class Retriever:
         use_hybrid: bool | None = None,
     ) -> None:
         self.settings = settings or get_settings()
-        self.index = index or VectorIndex(self.settings)
+        if index is None:
+            try:
+                candidate = VectorIndex(self.settings)
+                if candidate.count() == 0:
+                    raise RuntimeError("ChromaDB пуст")
+                index = candidate
+            except Exception:  # noqa: BLE001 - повреждённый HNSW переключаем на NumPy-кэш
+                index = NumpyIndex(self.settings)
+        self.index = index
         self.use_hybrid = self.settings.use_hybrid if use_hybrid is None else use_hybrid
         self._bm25: BM25Store | None = None
 
@@ -142,12 +150,23 @@ class Retriever:
         query_embedding = np.asarray(
             self.index.embedder.get_query_embedding(question), dtype=np.float32
         )
-        payload = self.index.query(
-            query_embedding.tolist(),
-            top_k=fetch_k,
-            where=self._where(topic_slug),
-            include_embeddings=True,
-        )
+        try:
+            payload = self.index.query(
+                query_embedding.tolist(),
+                top_k=fetch_k,
+                where=self._where(topic_slug),
+                include_embeddings=True,
+            )
+        except Exception:  # noqa: BLE001 - если HNSW не читается, используем NumPy-кэш
+            if isinstance(self.index, NumpyIndex):
+                raise
+            self.index = NumpyIndex(self.settings)
+            payload = self.index.query(
+                query_embedding.tolist(),
+                top_k=fetch_k,
+                where=self._where(topic_slug),
+                include_embeddings=True,
+            )
         ids = (payload.get("ids") or [[]])[0]
         documents = (payload.get("documents") or [[]])[0]
         metadatas = (payload.get("metadatas") or [[]])[0]

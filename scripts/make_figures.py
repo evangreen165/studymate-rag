@@ -81,7 +81,7 @@ def architecture() -> None:
     box(ax, 5.2, 3.6, 2.1, 1.1, "FastAPI\nREST API\n/chat /documents", color=PURPLE)
     box(ax, 7.9, 3.5, 2.4, 1.3, "RAG-ядро\nпоиск + промпт\nцитаты и отказ", color=TEAL)
     box(ax, 11.0, 5.4, 2.5, 1.0, "ChromaDB\nплотный индекс\n(USER2-base)", color=BLUE, fontsize=9)
-    box(ax, 11.0, 3.7, 2.5, 1.0, "BM25\nполный корпус\n19 235 чанков", color=ORANGE, fontsize=9)
+    box(ax, 11.0, 3.7, 2.5, 1.0, "BM25\nполный корпус\n18 693 чанков", color=ORANGE, fontsize=9)
     box(ax, 11.0, 2.0, 2.5, 1.0, "LLM\nLlama-3.1-70B\n(OpenRouter)", color=PURPLE, fontsize=9)
 
     box(ax, 0.8, 0.6, 2.3, 0.9, "Корпус PDF\n41 документ", color=DARK, fontsize=10)
@@ -147,7 +147,7 @@ def pipeline() -> None:
     for index in range(len(offline) - 1):
         arrow(ax, (offline[index][0] + 1.55, 6.22), (offline[index + 1][0], 6.22))
 
-    box(ax, 9.8, 4.25, 1.55, 0.8, "BM25-корпус\n19 235 чанков", color=ORANGE, fontsize=8.5)
+    box(ax, 9.8, 4.25, 1.55, 0.8, "BM25-корпус\n18 693 чанков", color=ORANGE, fontsize=8.5)
     arrow(ax, (7.9 + 1.55, 5.7), (10.2, 5.05), "все чанки")
 
     ax.text(0.2, 4.0, "Онлайн: ответ на вопрос", fontsize=12, fontweight="bold", color=PURPLE)

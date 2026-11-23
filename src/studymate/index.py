@@ -11,9 +11,9 @@ import numpy as np
 from chromadb.config import Settings as ChromaSettings
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
-from .chunking import Chunk, collect_chunks
+from .chunking import Chunk, collect_chunks, read_chunks_jsonl
 from .config import Settings, get_settings
-from .utils import read_json, utc_now_iso, write_json
+from .utils import read_json, sha256_text, utc_now_iso, write_json
 
 
 class HashEmbedder:
@@ -88,6 +88,8 @@ class VectorIndex:
             metadata={"hnsw:space": "cosine"},
         )
         self._embedder = embedder
+        self.last_ids: list[str] = []
+        self.last_embeddings: list[list[float]] = []
 
     @property
     def embedder(self):
@@ -112,10 +114,13 @@ class VectorIndex:
         *,
         batch_size: int = 32,
         progress: Callable[[int, int], None] | None = None,
+        upsert: bool = True,
     ) -> int:
         chunk_list = list(chunks)
         total = len(chunk_list)
         added = 0
+        self.last_ids = []
+        self.last_embeddings = []
         for start in range(0, total, batch_size):
             batch = chunk_list[start : start + batch_size]
             texts = [chunk.text for chunk in batch]
@@ -129,16 +134,43 @@ class VectorIndex:
                 }
                 metadata["chunk_id"] = chunk.chunk_id
                 metadatas.append(metadata)
-            self.collection.upsert(
+            method = self.collection.upsert if upsert else self.collection.add
+            method(
                 ids=[chunk.chunk_id for chunk in batch],
                 embeddings=embeddings,
                 documents=texts,
                 metadatas=metadatas,
             )
+            self.last_ids.extend(chunk.chunk_id for chunk in batch)
+            self.last_embeddings.extend(embeddings)
             added += len(batch)
             if progress:
                 progress(added, total)
         return added
+
+    def verify(self) -> bool:
+        """Проверяет, что HNSW-индекс читается, и заставляет его сохраниться на диск."""
+        payload = self.collection.get(limit=1, include=["embeddings"])
+        embeddings = payload.get("embeddings")
+        if embeddings is None or len(embeddings) == 0:
+            return False
+        self.collection.query(query_embeddings=[list(embeddings[0])], n_results=1)
+        return True
+
+    def close(self) -> None:
+        """Закрывает клиент Chroma, чтобы HNSW-файлы были сброшены на диск."""
+        import gc
+
+        try:
+            del self.collection
+        except AttributeError:
+            pass
+        try:
+            self.client.clear_system_cache()
+        except Exception:  # noqa: BLE001
+            pass
+        del self.client
+        gc.collect()
 
     def build(
         self,
@@ -149,7 +181,7 @@ class VectorIndex:
     ) -> int:
         if rebuild:
             self.reset()
-        return self.add_chunks(chunks, progress=progress)
+        return self.add_chunks(chunks, progress=progress, upsert=not rebuild)
 
     def query(
         self,
@@ -188,6 +220,96 @@ class VectorIndex:
 
     def read_meta(self, path: Path | None = None) -> dict:
         return read_json(path or self.settings.index_meta_path, default={})
+
+
+class NumpyIndex:
+    """Резервный плотный индекс на NumPy: используется, если HNSW-сегмент Chroma не читается."""
+
+    def __init__(
+        self,
+        settings: Settings | None = None,
+        *,
+        embedder: object | None = None,
+    ) -> None:
+        self.settings = settings or get_settings()
+        self._embedder = embedder
+        self.cache_dir = self.settings.cache_dir
+        npz_path = self.cache_dir / "dense_embeddings.npz"
+        chunks_path = self.cache_dir / "dense_chunks.jsonl"
+        if not npz_path.exists() or not chunks_path.exists():
+            raise FileNotFoundError("Нет кэша плотных эмбеддингов для NumPy-индекса")
+        payload = np.load(npz_path, allow_pickle=False)
+        self.ids = [str(value) for value in payload["ids"].tolist()]
+        self.vectors = np.asarray(payload["embeddings"], dtype=np.float32)
+        chunks = read_chunks_jsonl(chunks_path)
+        by_id = {chunk.chunk_id: chunk for chunk in chunks}
+        self.documents = [by_id[chunk_id].text if chunk_id in by_id else "" for chunk_id in self.ids]
+        self.metadatas = [by_id[chunk_id].metadata if chunk_id in by_id else {} for chunk_id in self.ids]
+        norms = np.linalg.norm(self.vectors, axis=1, keepdims=True)
+        self.vectors = self.vectors / np.maximum(norms, 1e-9)
+
+    @property
+    def embedder(self):
+        if self._embedder is None:
+            self._embedder = build_embedder(self.settings)
+        return self._embedder
+
+    def count(self) -> int:
+        return len(self.ids)
+
+    def query(
+        self,
+        query_embedding: list[float],
+        *,
+        top_k: int,
+        where: dict | None = None,
+        include_embeddings: bool = False,
+    ) -> dict:
+        query = np.asarray(query_embedding, dtype=np.float32)
+        query = query / max(float(np.linalg.norm(query)), 1e-9)
+        scores = self.vectors @ query
+        candidates = list(range(len(self.ids)))
+        if where:
+            candidates = [
+                index
+                for index in candidates
+                if all(self.metadatas[index].get(key) == value for key, value in where.items())
+            ]
+        candidates.sort(key=lambda index: scores[index], reverse=True)
+        selected = candidates[:top_k]
+        result = {
+            "ids": [[self.ids[index] for index in selected]],
+            "documents": [[self.documents[index] for index in selected]],
+            "metadatas": [[self.metadatas[index] for index in selected]],
+            "distances": [[1.0 - float(scores[index]) for index in selected]],
+        }
+        if include_embeddings:
+            result["embeddings"] = [[self.vectors[index].tolist() for index in selected]]
+        return result
+
+    def get_all(self, *, include_documents: bool = True) -> dict:
+        payload = {"ids": self.ids, "metadatas": self.metadatas}
+        if include_documents:
+            payload["documents"] = self.documents
+        return payload
+
+    def delete_document(self, doc_id: str) -> int:
+        keep = [index for index, meta in enumerate(self.metadatas) if meta.get("doc_id") != doc_id]
+        removed = len(self.ids) - len(keep)
+        self.ids = [self.ids[index] for index in keep]
+        self.documents = [self.documents[index] for index in keep]
+        self.metadatas = [self.metadatas[index] for index in keep]
+        self.vectors = self.vectors[keep]
+        return removed
+
+    def read_meta(self, path: Path | None = None) -> dict:
+        return read_json(path or self.settings.index_meta_path, default={})
+
+    def write_meta(self, meta: dict, path: Path | None = None) -> None:
+        write_json(path or self.settings.index_meta_path, meta)
+
+    def close(self) -> None:
+        return None
 
 
 def build_index(

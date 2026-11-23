@@ -54,7 +54,18 @@ def main() -> None:
         percent = int(done / total * 100) if total else 0
         print(f"  {done}/{total} ({percent}%)", flush=True)
 
-    added = index.add_chunks(dense_chunks, progress=progress)
+    added = index.add_chunks(dense_chunks, progress=progress, upsert=args.no_rebuild)
+    index.verify()
+    if index.last_embeddings:
+        import numpy as np
+
+        write_chunks_jsonl(dense_chunks, settings.cache_dir / "dense_chunks.jsonl")
+        np.savez_compressed(
+            settings.cache_dir / "dense_embeddings.npz",
+            ids=np.asarray(index.last_ids),
+            embeddings=np.asarray(index.last_embeddings, dtype=np.float32),
+        )
+    index.close()
     elapsed = time.perf_counter() - started
     dense_counts = Counter(chunk.doc_id for chunk in dense_chunks)
     bm25_counts = Counter(chunk.doc_id for chunk in all_chunks)
