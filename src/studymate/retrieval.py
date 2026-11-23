@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
+from nltk.stem.snowball import RussianStemmer
 from rank_bm25 import BM25Okapi
 
 from .chunking import read_chunks_jsonl
@@ -12,6 +14,8 @@ from .config import Settings, get_settings
 from .index import NumpyIndex, VectorIndex
 
 _TOKEN_RE = re.compile(r"[A-Za-zА-Яа-яЁё0-9_]{2,}")
+_CYR_RE = re.compile(r"[А-Яа-яЁё]")
+_STEMMER = RussianStemmer()
 _STOPWORDS = {
     "и", "в", "во", "не", "что", "он", "на", "я", "с", "со", "как", "а", "то", "все",
     "она", "так", "его", "но", "да", "ты", "к", "у", "же", "вы", "за", "бы", "по",
@@ -22,9 +26,54 @@ _STOPWORDS = {
     "with", "as", "by", "that", "this", "it", "be", "from", "at", "which",
 }
 
+# Расширение запроса англоязычными терминами: корпус смешанный, а шпаргалки по Git — на английском.
+_EXPANSIONS: tuple[tuple[str, str], ...] = (
+    ("отмен", "reset revert checkout restore"),
+    ("коммит", "commit"),
+    ("ветк", "branch"),
+    ("слиян", "merge"),
+    ("перебазир", "rebase"),
+    ("рабоч", "working directory"),
+    ("файл", "file"),
+    ("удал", "remove rm"),
+    ("истори", "log history"),
+    ("изменен", "changes diff"),
+    ("индекс", "index btree"),
+    ("соединен", "join"),
+    ("таблиц", "table"),
+    ("транзакц", "transaction acid"),
+    ("класс", "class"),
+    ("наследован", "inheritance"),
+    ("полиморф", "polymorphism"),
+    ("паттерн", "pattern"),
+    ("спутник", "satellite orbit"),
+    ("маршрутизатор", "router routing"),
+    ("протокол", "protocol"),
+    ("сложност", "complexity"),
+    ("сортиров", "sorting"),
+    ("граф", "graph"),
+)
+
+
+@lru_cache(maxsize=200_000)
+def _stem_token(token: str) -> str:
+    return _STEMMER.stem(token) if _CYR_RE.search(token) else token
+
 
 def tokenize(text: str) -> list[str]:
-    return [token.lower() for token in _TOKEN_RE.findall(text) if token.lower() not in _STOPWORDS]
+    tokens = [token.lower() for token in _TOKEN_RE.findall(text) if token.lower() not in _STOPWORDS]
+    return [_stem_token(token) for token in tokens]
+
+
+def expand_query(question: str) -> str:
+    lower = question.lower()
+    additions: list[str] = []
+    for marker, expansion in _EXPANSIONS:
+        if marker in lower:
+            additions.extend(expansion.split())
+    if not additions:
+        return question
+    return question + " " + " ".join(dict.fromkeys(additions))
 
 
 @dataclass
@@ -95,7 +144,7 @@ class Retriever:
                 if candidate.count() == 0:
                     raise RuntimeError("ChromaDB пуст")
                 index = candidate
-            except Exception:  # noqa: BLE001 - повреждённый HNSW переключаем на NumPy-кэш
+            except Exception:
                 index = NumpyIndex(self.settings)
         self.index = index
         self.use_hybrid = self.settings.use_hybrid if use_hybrid is None else use_hybrid
@@ -157,7 +206,7 @@ class Retriever:
                 where=self._where(topic_slug),
                 include_embeddings=True,
             )
-        except Exception:  # noqa: BLE001 - если HNSW не читается, используем NumPy-кэш
+        except Exception:
             if isinstance(self.index, NumpyIndex):
                 raise
             self.index = NumpyIndex(self.settings)
@@ -203,7 +252,9 @@ class Retriever:
 
         bm25_rank: dict[str, int] = {}
         if self.use_hybrid:
-            for rank, (position, score) in enumerate(self.bm25.search(question, fetch_k)):
+            for rank, (position, score) in enumerate(
+                self.bm25.search(expand_query(question), fetch_k)
+            ):
                 if position >= len(self.bm25.ids):
                     continue
                 chunk_id = self.bm25.ids[position]
@@ -251,3 +302,4 @@ class Retriever:
             "top_k": self.settings.top_k,
             "dense_max_per_doc": self.settings.dense_max_per_doc,
         }
+

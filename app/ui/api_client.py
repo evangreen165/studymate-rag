@@ -28,7 +28,7 @@ def _request(method: str, path: str, **kwargs: Any) -> Any:
     if response.status_code >= 400:
         try:
             detail = response.json().get("detail", response.text)
-        except Exception:  # noqa: BLE001
+        except Exception:
             detail = response.text
         raise APIError(str(detail), response.status_code)
     if not response.content:

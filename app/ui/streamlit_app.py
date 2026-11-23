@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import json
 import time
 from datetime import datetime
 
+import api_client
+import chat_store
 import pandas as pd
 import streamlit as st
 
-import api_client
-import chat_store
 from studymate.topics import TOPICS
 
 st.set_page_config(

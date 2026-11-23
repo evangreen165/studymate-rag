@@ -1,11 +1,11 @@
 [project]
 name = "studymate"
 version = "0.1.0"
-description = "RAG-Р°СЃСЃРёСЃС‚РµРЅС‚ РїРѕ СѓС‡РµР±РЅС‹Рј РјР°С‚РµСЂРёР°Р»Р°Рј РєСѓСЂСЃР° СЃ РѕС‚РІРµС‚Р°РјРё РЅР° РІРѕРїСЂРѕСЃС‹ СЃС‚СѓРґРµРЅС‚РѕРІ"
+description = "RAG-ассистент по учебным материалам курса с ответами на вопросы студентов"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = { text = "MIT" }
-authors = [{ name = "Р•РІРіРµРЅРёР№ РљСѓР·СЊРјР°", email = "evangreen165@gmail.com" }]
+authors = [{ name = "Евгений Кузьма", email = "evangreen165@gmail.com" }]
 keywords = ["rag", "llm", "education", "llamaindex", "chromadb", "fastapi"]
 classifiers = [
     "Programming Language :: Python :: 3.12",
@@ -14,7 +14,7 @@ classifiers = [
 ]
 
 dependencies = [
-    # Р”Р°РЅРЅС‹Рµ Рё РёР·РІР»РµС‡РµРЅРёРµ
+    # Данные и извлечение
     "pymupdf>=1.24,<2",
     "pypdf>=5,<7",
     "cryptography>=43",
@@ -48,8 +48,8 @@ dependencies = [
     "pydantic-settings>=2.6,<3",
     "prometheus-client>=0.21,<1",
     "streamlit>=1.41,<2",
-    # РћС†РµРЅРєР° (RAGAS 0.3 РЅРµСЃРѕРІРјРµСЃС‚РёРј СЃ langchain-community 0.4:
-    # РІ РЅС‘Рј СѓРґР°Р»С‘РЅ langchain_community.chat_models.vertexai)
+    # Оценка (RAGAS 0.3 несовместим с langchain-community 0.4:
+    # в нём удалён langchain_community.chat_models.vertexai)
     "ragas>=0.3.9,<0.4",
     "langchain>=0.3,<0.4",
     "langchain-openai>=0.3,<0.4",
@@ -58,7 +58,7 @@ dependencies = [
     "langchain-community>=0.3.27,<0.4",
     "datasets>=3.2,<5",
     "rank-bm25>=0.2.2",
-    # Р”РѕРєСѓРјРµРЅС‚С‹
+    # Документы
     "python-docx>=1.1",
     "python-pptx>=1.0",
     "qrcode[pil]>=8.0",

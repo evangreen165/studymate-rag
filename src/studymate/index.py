@@ -161,14 +161,10 @@ class VectorIndex:
         """Закрывает клиент Chroma, чтобы HNSW-файлы были сброшены на диск."""
         import gc
 
-        try:
+        with contextlib.suppress(AttributeError):
             del self.collection
-        except AttributeError:
-            pass
-        try:
+        with contextlib.suppress(Exception):
             self.client.clear_system_cache()
-        except Exception:  # noqa: BLE001
-            pass
         del self.client
         gc.collect()
 
@@ -328,7 +324,6 @@ def build_index(
     added = index.build(chunks, rebuild=rebuild, progress=progress)
     elapsed = time.perf_counter() - started
     from .corpus import load_manifest
-    from .utils import sha256_text
 
     manifest = load_manifest(settings)
     corpus_hash = sha256_text("|".join(sorted(chunk.chunk_id for chunk in chunks)))
@@ -351,3 +346,4 @@ def build_index(
         "mode": meta.mode,
         "embedding_model": meta.embedding_model,
     }
+

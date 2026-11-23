@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     llm_fallback_model: str = Field(
         default="meta-llama/llama-3.3-70b-instruct", alias="LLM_FALLBACK_MODEL"
     )
-    llm_temperature: float = 0.1
+    llm_temperature: float = 0.0
     llm_max_tokens: int = 1024
     llm_timeout_s: float = 120.0
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     # --- Поиск ---
     chunk_size_tokens: int = 800
     chunk_overlap_tokens: int = 100
-    dense_max_per_doc: int = 70
+    dense_max_per_doc: int = 25
     bm25_path: Path = Field(
         default=PROJECT_ROOT / "data" / "bm25_corpus.json", alias="BM25_PATH"
     )

@@ -55,7 +55,6 @@ def main() -> None:
         print(f"  {done}/{total} ({percent}%)", flush=True)
 
     added = index.add_chunks(dense_chunks, progress=progress, upsert=args.no_rebuild)
-    index.verify()
     if index.last_embeddings:
         import numpy as np
 
@@ -65,6 +64,11 @@ def main() -> None:
             ids=np.asarray(index.last_ids),
             embeddings=np.asarray(index.last_embeddings, dtype=np.float32),
         )
+        print("Кэш плотных эмбеддингов сохранён", flush=True)
+    try:
+        index.verify()
+    except Exception as exc:
+        print(f"Chroma verify failed, будет использован NumPy-кэш: {exc}", flush=True)
     index.close()
     elapsed = time.perf_counter() - started
     dense_counts = Counter(chunk.doc_id for chunk in dense_chunks)

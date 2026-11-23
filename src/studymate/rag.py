@@ -11,6 +11,8 @@ from .prompts import (
     build_messages,
     build_no_context_messages,
     cited_sources,
+    extractive_answer,
+    is_refusal,
 )
 from .retrieval import Retriever, Source
 
@@ -48,6 +50,7 @@ class RAGResponse:
             "answer": self.answer,
             "sources": [source.to_dict() for source in self.sources],
             "used_sources": [source.to_dict() for source in self.used_sources],
+            "contexts": [source.text for source in self.sources],
             "provider": self.provider,
             "model": self.model,
             "usage": {
@@ -176,6 +179,11 @@ class RAGService:
         response = self._call_llm(
             messages, provider=provider, model=model, max_tokens=max_tokens
         )
+        if is_refusal(response.text):
+            fallback = extractive_answer(question, sources)
+            if fallback:
+                response.text = fallback
+                response.finish_reason = "extractive-fallback"
         generation_ms = (time.perf_counter() - generation_started) * 1000
         used = cited_sources(response.text, sources)
         return RAGResponse(
@@ -194,6 +202,7 @@ class RAGService:
             generation_ms=generation_ms,
             latency_ms=(time.perf_counter() - started) * 1000,
             finish_reason=response.finish_reason,
+            refusal=is_refusal(response.text),
             topic=topic,
             top_k=top_k or self.settings.top_k,
         )

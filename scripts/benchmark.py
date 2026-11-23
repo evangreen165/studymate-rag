@@ -65,7 +65,7 @@ async def main() -> None:
             await one_request(client, question)
 
     runs = []
-    for concurrency in (1, 3):
+    for concurrency in (1, 3, 5):
         result = await run_concurrency(args.api_url, concurrency, args.requests)
         print(result, flush=True)
         runs.append(result)
@@ -99,3 +99,4 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
+
