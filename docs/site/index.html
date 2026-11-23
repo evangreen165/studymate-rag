@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>StudyMate — RAG-ассистент по учебным материалам</title>
+  <meta name="description" content="Ассистент по учебным материалам курса: ответы на вопросы студентов с цитатами, страницами и оценкой качества RAGAS.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="nav">
+    <a class="brand" href="#top">
+      <span class="logo">📚</span>
+      <span>StudyMate</span>
+    </a>
+    <nav>
+      <a href="#features">Возможности</a>
+      <a href="#architecture">Архитектура</a>
+      <a href="#metrics">Метрики</a>
+      <a href="#quickstart">Запуск</a>
+      <a class="ghost" href="https://github.com/evangreen165/studymate-rag" target="_blank" rel="noreferrer">GitHub ↗</a>
+      <button id="theme" class="theme" aria-label="Переключить тему">◐</button>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-text">
+        <div class="eyebrow">Курсовая работа · БГУИР · ПИС 2026/2027</div>
+        <h1>Ассистент по учебным материалам курса</h1>
+        <p class="lead">
+          RAG-система отвечает на вопросы студентов по PDF-конспектам, опирается только на найденные
+          фрагменты и показывает источники с номерами страниц.
+        </p>
+        <div class="buttons">
+          <a class="btn primary" href="https://github.com/evangreen165/studymate-rag" target="_blank" rel="noreferrer">Открыть репозиторий</a>
+          <a class="btn" href="#quickstart">Быстрый старт</a>
+        </div>
+        <div class="chips">
+          <span>41 документ</span>
+          <span>15 784 страницы</span>
+          <span>Hybrid RAG</span>
+          <span>Llama-3.1-70B</span>
+          <span>RAGAS</span>
+        </div>
+      </div>
+      <div class="hero-shot">
+        <img src="images/ui-chat.png" alt="Интерфейс StudyMate: ответ с источниками и метриками">
+      </div>
+    </section>
+
+    <section id="features" class="section">
+      <div class="section-head">
+        <h2>Что умеет</h2>
+        <p>Не «чат-бот обо всём», а ассистент, который держится материалов курса.</p>
+      </div>
+      <div class="grid features">
+        <article>
+          <div class="icon">🔎</div>
+          <h3>Гибридный поиск</h3>
+          <p>Плотный индекс ChromaDB на USER2-base и BM25 по всему корпусу, объединение через RRF и MMR.</p>
+        </article>
+        <article>
+          <div class="icon">📌</div>
+          <h3>Ответы со ссылками</h3>
+          <p>Цитаты <code>[1]</code>, карточки источников, документ, страница и оценка релевантности.</p>
+        </article>
+        <article>
+          <div class="icon">🛡️</div>
+          <h3>Честный отказ</h3>
+          <p>Если в материалах нет ответа, система говорит об этом вместо галлюцинации.</p>
+        </article>
+        <article>
+          <div class="icon">📁</div>
+          <h3>Управление корпусом</h3>
+          <p>Список документов, загрузка PDF, запуск и отмена индексации, удаление, прогресс в реальном времени.</p>
+        </article>
+        <article>
+          <div class="icon">📊</div>
+          <h3>Метрики агента</h3>
+          <p>Токены входа и выхода, токены в секунду, задержки поиска и генерации, журнал запросов.</p>
+        </article>
+        <article>
+          <div class="icon">💬</div>
+          <h3>История чатов</h3>
+          <p>Несколько диалогов, автозаголовки, экспорт в Markdown и сохранение между перезапусками.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="architecture" class="section split">
+      <div>
+        <div class="eyebrow">Как это работает</div>
+        <h2>От PDF до ответа с цитатой</h2>
+        <p>
+          Корпус проходит извлечение и очистку, нарезается на чанки по 800 токенов и индексируется
+          двумя способами: плотные векторы USER2-base в ChromaDB и BM25 по всем чанкам.
+        </p>
+        <p>
+          Вопрос ищется одновременно по двум индексам, результаты объединяются RRF. LLM получает
+          только найденные фрагменты и обязана ссылаться на них. Если контекста нет — следует отказ.
+        </p>
+        <ul class="ticks">
+          <li>PyMuPDF + очистка колонтитулов и дубликатов</li>
+          <li>USER2-base (768d) + ChromaDB, cosine</li>
+          <li>BM25 по 19 235 чанкам полного корпуса</li>
+          <li>RAGAS: faithfulness, answer relevancy, context precision/recall</li>
+        </ul>
+      </div>
+      <img class="diagram" src="images/architecture.png" alt="Архитектура StudyMate">
+    </section>
+
+    <section id="metrics" class="section">
+      <div class="section-head">
+        <h2>Качество</h2>
+        <p>Оценка на отложенной тестовой выборке из 30 вопросов, судья — Llama-3.1-70B.</p>
+      </div>
+      <div class="metrics" id="metrics-grid">
+        <div><span>Faithfulness</span><strong id="m-faith">—</strong><small>цель ≥ 0,80</small></div>
+        <div><span>Answer Relevancy</span><strong id="m-rel">—</strong><small>цель ≥ 0,75</small></div>
+        <div><span>Context Precision</span><strong id="m-prec">—</strong><small>дополнительная</small></div>
+        <div><span>Context Recall</span><strong id="m-rec">—</strong><small>дополнительная</small></div>
+      </div>
+      <div class="baseline">
+        <h3>RAG против baseline</h3>
+        <p>Baseline — та же LLM без поиска по документам. Он отвечает «по памяти» и не может подтвердить утверждения.</p>
+        <table>
+          <thead><tr><th>Метрика</th><th>RAG</th><th>LLM без поиска</th></tr></thead>
+          <tbody id="baseline-body">
+            <tr><td>Faithfulness</td><td>—</td><td>—</td></tr>
+            <tr><td>Answer Relevancy</td><td>—</td><td>—</td></tr>
+            <tr><td>Answer Correctness</td><td>—</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section gallery">
+      <div class="section-head">
+        <h2>Интерфейс</h2>
+        <p>Чат, материалы, документы и метрики — в одном Streamlit-приложении.</p>
+      </div>
+      <div class="shots">
+        <figure><img src="images/ui-sources.png" alt="Источники ответа"><figcaption>Источники с цитатами и страницами</figcaption></figure>
+        <figure><img src="images/ui-materials.png" alt="Материалы и индекс"><figcaption>Корпус, темы и статус индекса</figcaption></figure>
+        <figure><img src="images/ui-metrics.png" alt="Метрики агента"><figcaption>Токены, скорость и задержки</figcaption></figure>
+        <figure><img src="images/api-swagger.png" alt="Swagger API"><figcaption>OpenAPI/Swagger</figcaption></figure>
+      </div>
+    </section>
+
+    <section id="quickstart" class="section quick">
+      <div>
+        <div class="eyebrow">Запуск</div>
+        <h2>Одна команда</h2>
+        <p>Нужен только Docker и ключ OpenRouter. Демонстрационный корпус уже внутри.</p>
+        <pre><code>cp .env.example .env
+# OPENROUTER_API_KEY=...
+docker compose up --build</code></pre>
+        <p class="muted">UI: <code>localhost:8501</code> · API: <code>localhost:8000/docs</code></p>
+      </div>
+      <div class="stack">
+        <h3>Стек</h3>
+        <div class="tags">
+          <span>Python 3.12</span><span>LlamaIndex</span><span>ChromaDB</span><span>USER2-base</span>
+          <span>FastAPI</span><span>Streamlit</span><span>Docker</span><span>RAGAS</span><span>GitHub Actions</span>
+        </div>
+        <h3>Документы</h3>
+        <p><a href="https://github.com/evangreen165/studymate-rag/tree/main/docs">ПЗ, графика и презентация</a> в репозитории.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div>© 2026 Евгений Кузьма · БГУИР, кафедра ИСиТ</div>
+    <div><a href="https://github.com/evangreen165/studymate-rag">GitHub</a> · MIT · демо-корпус CC BY 4.0</div>
+  </footer>
+  <script src="script.js"></script>
+</body>
+</html>
