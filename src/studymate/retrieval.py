@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import math
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
 
 import numpy as np
 from rank_bm25 import BM25Okapi
@@ -224,7 +222,7 @@ class Retriever:
         if self.use_hybrid:
             try:
                 bm25_chunks = len(self.bm25.ids)
-            except Exception:  # noqa: BLE001 - статистика не должна ломать /stats
+            except Exception:
                 bm25_chunks = 0
         return {
             "chunks": self.index.count(),

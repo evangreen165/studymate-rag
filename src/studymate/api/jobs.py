@@ -4,7 +4,7 @@ import threading
 import time
 import traceback
 from collections import Counter
-from typing import Iterable
+from collections.abc import Iterable
 
 from ..chunking import (
     collect_chunks,
@@ -166,7 +166,7 @@ class IndexJobManager:
                 message=str(exc),
                 finished_at=utc_now_iso(),
             )
-        except Exception as exc:  # noqa: BLE001 - статус задания должен сохранить ошибку
+        except Exception as exc:
             self._update(
                 status="error",
                 error=f"{type(exc).__name__}: {exc}",

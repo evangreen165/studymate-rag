@@ -3,14 +3,14 @@ from __future__ import annotations
 import json
 import math
 import random
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from statistics import mean
-from typing import Iterable
 
 import numpy as np
 
-from .config import Settings, get_settings
+from .config import Settings
 from .rag import RAGService
 
 
@@ -26,7 +26,7 @@ class EvalItem:
     page: int = 0
 
     @classmethod
-    def from_dict(cls, payload: dict) -> "EvalItem":
+    def from_dict(cls, payload: dict) -> EvalItem:
         return cls(
             id=str(payload.get("id", "")),
             question=str(payload.get("question", "")),
@@ -75,7 +75,7 @@ def run_rag(
             payload["gold_title"] = item.title
             payload["id"] = item.id
             rows.append(payload)
-        except Exception as exc:  # noqa: BLE001 - один сбой не должен ломать прогон
+        except Exception as exc:
             rows.append(
                 {
                     "id": item.id,
@@ -126,7 +126,7 @@ def run_no_context(
                     "model": result.get("model"),
                 }
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             rows.append(
                 {
                     "id": item.id,

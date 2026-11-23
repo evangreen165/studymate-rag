@@ -3,9 +3,9 @@
 import re
 import unicodedata
 from collections import Counter
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable
 
 import pymupdf
 
@@ -167,7 +167,7 @@ def extract_document(path: Path, root: Path, doc_id: str | None = None) -> Extra
             doc.metadata = {key: value for key, value in (pdf.metadata or {}).items() if value}
             doc.title = _clean_title(doc.metadata.get("title"), path)
             raw_pages = [page.get_text("text") or "" for page in pdf]
-    except Exception as exc:  # noqa: BLE001 - ошибка конкретного PDF не должна ронять весь корпус
+    except Exception as exc:
         doc.error = f"{type(exc).__name__}: {exc}"
         return doc
 

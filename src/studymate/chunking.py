@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import Iterator
 
 from llama_index.core import Document
 from llama_index.core.node_parser import SentenceSplitter
@@ -147,7 +147,7 @@ def sample_chunks(chunks: list[Chunk], max_per_doc: int = 70) -> list[Chunk]:
             selected.extend(doc_chunks)
             continue
         step = (len(doc_chunks) - 1) / (max_per_doc - 1)
-        indices = sorted({int(round(index * step)) for index in range(max_per_doc)})
+        indices = sorted({round(index * step) for index in range(max_per_doc)})
         selected.extend(doc_chunks[index] for index in indices)
     return selected
 

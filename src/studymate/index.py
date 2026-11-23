@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import contextlib
 import time
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Iterable, Sequence
 
 import chromadb
 import numpy as np
@@ -98,10 +99,8 @@ class VectorIndex:
         return int(self.collection.count())
 
     def reset(self) -> None:
-        try:
+        with contextlib.suppress(Exception):
             self.client.delete_collection(self.collection_name)
-        except Exception:  # noqa: BLE001 - коллекции может не быть
-            pass
         self.collection = self.client.get_or_create_collection(
             name=self.collection_name,
             metadata={"hnsw:space": "cosine"},

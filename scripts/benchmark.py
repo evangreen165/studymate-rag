@@ -25,7 +25,7 @@ async def one_request(client: httpx.AsyncClient, question: str) -> tuple[bool, f
         response = await client.post("/chat", json={"question": question, "top_k": 6})
         response.raise_for_status()
         ok = True
-    except Exception:  # noqa: BLE001
+    except Exception:
         ok = False
     return ok, (time.perf_counter() - started) * 1000
 
@@ -78,7 +78,7 @@ async def main() -> None:
             import psutil
 
             ram_mb = round(psutil.Process(int(pid)).memory_info().rss / 1024 / 1024, 1)
-        except Exception:  # noqa: BLE001
+        except Exception:
             pass
 
     payload = {

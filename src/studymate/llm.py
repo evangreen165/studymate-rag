@@ -5,7 +5,7 @@ import re
 import threading
 import time
 from dataclasses import dataclass, field
-from typing import Protocol
+from typing import ClassVar, Protocol
 
 from .config import Settings, get_settings
 
@@ -72,7 +72,7 @@ class OpenRouterLLM:
                 max_tokens=max_tokens or self.settings.llm_max_tokens,
                 top_p=0.9,
             )
-        except Exception as exc:  # noqa: BLE001 - конвертируем ошибку провайдера
+        except Exception as exc:
             raise LLMError(f"{type(exc).__name__}: {exc}") from exc
         latency_ms = (time.perf_counter() - started) * 1000
         choice = response.choices[0]
@@ -97,7 +97,7 @@ class LocalLLM:
     provider = "local"
 
     _lock = threading.Lock()
-    _instances: dict[str, object] = {}
+    _instances: ClassVar[dict[str, object]] = {}
 
     def __init__(self, settings: Settings | None = None) -> None:
         settings = settings or get_settings()
@@ -131,7 +131,7 @@ class LocalLLM:
                 max_tokens=max_tokens or self.settings.llm_max_tokens,
                 top_p=0.9,
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             raise LLMError(f"{type(exc).__name__}: {exc}") from exc
         latency_ms = (time.perf_counter() - started) * 1000
         usage = response.get("usage", {})

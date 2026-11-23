@@ -5,7 +5,6 @@ from pathlib import Path
 
 from studymate.config import get_settings
 from studymate.corpus import build_manifest
-from studymate.utils import write_json
 
 
 def main() -> None:

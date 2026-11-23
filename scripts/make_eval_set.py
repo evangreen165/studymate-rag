@@ -4,7 +4,6 @@ import argparse
 import json
 import random
 import re
-import time
 from collections import defaultdict
 from pathlib import Path
 
@@ -137,7 +136,7 @@ def main() -> None:
                     ],
                     max_tokens=450,
                 )
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 print(f"  ошибка на {page['title']} стр. {page['page']}: {exc}")
                 continue
             payload = parse_json(response.text)

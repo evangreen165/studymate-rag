@@ -157,7 +157,8 @@ class RAGService:
             )
 
         best_dense = max(source.dense_score for source in sources)
-        if best_dense < self.settings.min_retrieval_score:
+        best_bm25 = max(source.bm25_score for source in sources)
+        if best_dense < self.settings.min_retrieval_score and best_bm25 < 1.0:
             return RAGResponse(
                 request_id=request_id,
                 question=question,

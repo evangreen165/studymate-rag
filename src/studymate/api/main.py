@@ -278,7 +278,7 @@ def cancel_index() -> dict:
 
 @app.post("/corpus/upload", response_model=UploadResponse)
 async def upload_corpus(
-    files: list[UploadFile] = File(...),
+    files: list[UploadFile] = File(...),  # noqa: B008
     topic: str = Form("other"),
 ) -> dict:
     if len(files) > 50:
@@ -312,7 +312,7 @@ async def upload_corpus(
             )
         except UploadError as exc:
             errors.append(f"{filename}: {exc}")
-        except Exception as exc:  # noqa: BLE001 - ошибка одного файла не должна ронять пакет
+        except Exception as exc:
             errors.append(f"{filename}: {type(exc).__name__}: {exc}")
     return {"uploaded": uploaded, "errors": errors}
 
@@ -324,7 +324,7 @@ def delete_document(doc_id: str) -> dict:
         raise HTTPException(status_code=404, detail="Документ не найден")
     try:
         VectorIndex(settings).delete_document(doc_id)
-    except Exception as exc:  # noqa: BLE001 - документ уже удалён из манифеста
+    except Exception as exc:
         logger.warning("delete_index_failed", extra={"error": str(exc)})
     return DeleteResponse(
         removed=True, doc_id=doc_id, deleted_file=bool(result.get("deleted_file"))
