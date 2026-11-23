@@ -109,6 +109,8 @@ class RAGService:
         model: str | None,
         max_tokens: int | None,
     ):
+        if provider is None and model is None and self._llm is not None:
+            return self._llm.complete(messages, max_tokens=max_tokens)
         provider = (provider or self.settings.llm_provider).lower()
         requested_model = model or (self.settings.llm_model if provider == "openrouter" else None)
         try:
