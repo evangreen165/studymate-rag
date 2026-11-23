@@ -1,0 +1,54 @@
+name: studymate
+
+services:
+  api:
+    build:
+      context: .
+    image: studymate-rag:local
+    command: ["api"]
+    env_file:
+      - .env
+    environment:
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      INDEX_DIR: /app/chroma_db_demo
+      MANIFEST_PATH: /app/data/manifest_demo.json
+      INDEX_META_PATH: /app/data/index_meta_demo.json
+      CORPUS_DIR: /app/data
+      DEMO_CORPUS_DIR: /app/data/demo
+      UPLOADS_DIR: /app/data/uploads
+      CACHE_DIR: /app/data/cache
+      LOG_DIR: /app/logs
+      HF_HOME: /app/.cache/hf
+    volumes:
+      - ./data:/app/data
+      - ./chroma_db_demo:/app/chroma_db_demo
+      - ./logs:/app/logs
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 120s
+
+  ui:
+    image: studymate-rag:local
+    command: ["ui"]
+    environment:
+      API_URL: http://api:8000
+      CHAT_STORE: /app/data/chat_history/chats.json
+    volumes:
+      - ./data:/app/data
+    ports:
+      - "8501:8501"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8501/_stcore/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s

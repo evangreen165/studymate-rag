@@ -1,0 +1,124 @@
+[project]
+name = "studymate"
+version = "0.1.0"
+description = "RAG-Р°СЃСЃРёСЃС‚РµРЅС‚ РїРѕ СѓС‡РµР±РЅС‹Рј РјР°С‚РµСЂРёР°Р»Р°Рј РєСѓСЂСЃР° СЃ РѕС‚РІРµС‚Р°РјРё РЅР° РІРѕРїСЂРѕСЃС‹ СЃС‚СѓРґРµРЅС‚РѕРІ"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "MIT" }
+authors = [{ name = "Р•РІРіРµРЅРёР№ РљСѓР·СЊРјР°", email = "evangreen165@gmail.com" }]
+keywords = ["rag", "llm", "education", "llamaindex", "chromadb", "fastapi"]
+classifiers = [
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    # Р”Р°РЅРЅС‹Рµ Рё РёР·РІР»РµС‡РµРЅРёРµ
+    "pymupdf>=1.24,<2",
+    "pypdf>=5,<7",
+    "cryptography>=43",
+    "pandas>=2.2",
+    "numpy>=1.26",
+    "matplotlib>=3.9",
+    "pillow>=10",
+    "reportlab>=4.2",
+    "tqdm>=4.66",
+    "orjson>=3.10",
+    "python-dotenv>=1.0",
+    "pyyaml>=6.0",
+    "httpx>=0.27",
+    "tenacity>=9.0",
+
+    # RAG
+    "llama-index-core>=0.12,<0.15",
+    "llama-index-vector-stores-chroma>=0.4,<0.6",
+    "llama-index-embeddings-huggingface>=0.5,<0.7",
+    "llama-index-retrievers-bm25>=0.5,<0.7",
+    "chromadb>=0.5,<2",
+    "sentence-transformers>=3.3,<5.7",
+    "transformers>=4.46,<5",
+    "huggingface-hub>=0.26",
+    "tiktoken>=0.8",
+    "openai>=1.60,<3",
+
+    # API / UI
+    "fastapi>=0.115,<1",
+    "uvicorn[standard]>=0.32,<1",
+    "python-multipart>=0.0.20",
+    "pydantic>=2.9,<3",
+    "pydantic-settings>=2.6,<3",
+    "prometheus-client>=0.21,<1",
+    "streamlit>=1.41,<2",
+
+    # РћС†РµРЅРєР° (RAGAS 0.3 РЅРµСЃРѕРІРјРµСЃС‚РёРј СЃ langchain-community 0.4:
+    # РІ РЅС‘Рј СѓРґР°Р»С‘РЅ langchain_community.chat_models.vertexai)
+    "ragas>=0.3.9,<0.4",
+    "langchain>=0.3,<0.4",
+    "langchain-openai>=0.3,<0.4",
+    "langchain-huggingface>=0.1.2,<0.4",
+    "langchain-core>=0.3.70,<0.4",
+    "langchain-community>=0.3.27,<0.4",
+    "datasets>=3.2,<5",
+    "rank-bm25>=0.2.2",
+
+    # Р”РѕРєСѓРјРµРЅС‚С‹
+    "python-docx>=1.1",
+    "python-pptx>=1.0",
+    "qrcode[pil]>=8.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-cov>=6.0",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "types-pyyaml",
+    "types-requests",
+]
+local = [
+    "llama-cpp-python>=0.3",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/studymate"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+ignore = ["E501", "RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+"scripts/**" = ["T201"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers --disable-warnings"
+markers = [
+    "integration: tests that need local models or network",
+    "slow: slow tests (full corpus, indexing)",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["studymate"]
+omit = ["*/__init__.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+

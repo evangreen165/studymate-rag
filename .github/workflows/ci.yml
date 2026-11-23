@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Install dependencies
+        run: uv sync --frozen
+      - name: Lint
+        run: uv run ruff check .
+      - name: Tests
+        run: uv run pytest --cov=studymate --cov-report=term-missing
+      - name: Docker build
+        run: docker build -t studymate-rag:ci .
+
+  smoke:
+    runs-on: ubuntu-latest
+    needs: lint-test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Install dependencies
+        run: uv sync --frozen
+      - name: CLI smoke (mock embeddings, no network)
+        run: |
+          uv run python scripts/make_demo_corpus.py
+          uv run python -c "
+          from studymate.config import get_settings
+          from studymate.chunking import collect_chunks
+          from studymate.index import HashEmbedder, VectorIndex
+          s = get_settings()
+          chunks = collect_chunks(s, max_docs=2)
+          idx = VectorIndex(s, embedder=HashEmbedder())
+          idx.build(chunks)
+          print('indexed', idx.count())
+          "

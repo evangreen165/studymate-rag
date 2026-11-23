@@ -1,0 +1,68 @@
+# Секреты и локальные настройки
+.env
+.env.*
+!.env.example
+
+# Локальная LLM и кэш моделей
+*.gguf
+models/
+.cache/
+.cache/**
+hf_cache/
+
+# Полный корпус (авторские материалы, не публикуются)
+data/**/*.pdf
+data/**/*.PDF
+!data/demo/**/*.pdf
+!data/demo/*.pdf
+data/**/*.zip
+data/git.zip
+data/manifest_demo.json
+data/index_meta*.json
+data/passport_demo.md
+data/cache/
+data/bm25_corpus*.json
+data/chat_history/
+data/feedback.jsonl
+data/eval/candidates*.jsonl
+data/eval/candidates*_summary.md
+
+# Индекс и артефакты
+chroma_db*/
+.chroma/
+artifacts/
+logs/
+logs*.txt
+*.log
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Редакторы / ОС
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Материалы вуза и примеры (не часть проекта)
+теория оформление/
+пример курсовой, документация/
+
+# Временные файлы сборки документов
+~$*
+docs/pz/out/
+docs/pz/preview/
+docs/presentation/out/
+docs/graphics/out/
