@@ -87,6 +87,15 @@ def fmt_int(value: int | float | None) -> str:
     return f"{int(value):,}".replace(",", " ")
 
 
+def plural(count: int, one: str, few: str, many: str) -> str:
+    count = abs(int(count))
+    if count % 10 == 1 and count % 100 != 11:
+        return one
+    if 2 <= count % 10 <= 4 and not 12 <= count % 100 <= 14:
+        return few
+    return many
+
+
 def fmt_ms(value: float | None) -> str:
     if value is None:
         return "—"
@@ -127,7 +136,7 @@ def init_state() -> None:
     st.session_state.setdefault("pending_question", "")
     st.session_state.setdefault("upload_results", None)
     st.session_state.setdefault("feedback", {})
-    st.session_state.setdefault("top_k", 6)
+    st.session_state.setdefault("top_k", 4)
     st.session_state.setdefault("provider", "openrouter")
     st.session_state.setdefault("model", "")
     st.session_state.setdefault("max_tokens", 1024)
@@ -203,7 +212,7 @@ with st.sidebar:
             st.session_state.feedback = {}
             st.rerun()
     with col_count:
-        st.caption(f"{len(chat_store.list_chats())} чатов")
+        st.caption(f"{len(chat_store.list_chats())} {plural(len(chat_store.list_chats()), 'чат', 'чата', 'чатов')}")
 
     chats = chat_store.list_chats()
     for chat in chats[:12]:
@@ -266,7 +275,7 @@ st.markdown(
       <p>Отвечает на вопросы студентов по PDF-конспектам и показывает источники с номерами страниц.</p>
       <div class="chips">
         <span class="chip {'ok' if online else 'err'}">{'API онлайн' if online else 'API недоступен'}</span>
-        <span class="chip">📄 {fmt_int(summary.get('unique_documents', summary.get('documents', 0)))} документов</span>
+        <span class="chip">📄 {fmt_int(summary.get('unique_documents', summary.get('documents', 0)))} {plural(int(summary.get('unique_documents', summary.get('documents', 0)) or 0), 'документ', 'документа', 'документов')}</span>
         <span class="chip">📃 {fmt_int(summary.get('text_pages', 0))} страниц с текстом</span>
         <span class="chip">🧩 {fmt_int(chunks)} плотных · {fmt_int(bm25_chunks)} BM25</span>
         <span class="chip">🧠 {model_label or '—'}</span>
@@ -701,12 +710,13 @@ with about_tab:
     st.subheader("Как устроен StudyMate")
     st.markdown(
         """
-**Сценарий.** Студент задаёт вопрос по материалам курса. Система ищет релевантные фрагменты
-в векторном индексе, передаёт их LLM вместе с вопросом и возвращает ответ со ссылками на
-документ и страницу.
+**Сценарий.** Студент задаёт вопрос по материалам курса. Система определяет тему вопроса,
+ищет релевантные фрагменты в плотном и разреженном индексах, отбрасывает оглавления и
+передаёт лучшие фрагменты LLM вместе с вопросом. Ответ сопровождается ссылками на документ
+и страницу.
 
 **Пайплайн:**
-`PDF → PyMuPDF → очистка → LlamaIndex SentenceSplitter → USER2-base → ChromaDB → top-k/MMR + BM25 → промпт → Llama-3.1-70B → ответ + источники`.
+`PDF → PyMuPDF → очистка → SentenceSplitter → USER2-base/ChromaDB + BM25 → тема вопроса → фильтр оглавлений → MMR + взвешенное объединение → промпт → Qwen2.5-7B (локально) или Llama-3.1-70B → ответ + источники`.
 
 **Что можно делать:**
 - задавать вопросы и видеть цитаты, страницы и оценку релевантности;
@@ -714,7 +724,7 @@ with about_tab:
 - смотреть историю чатов, экспортировать её;
 - загружать новые PDF, запускать индексацию и удалять документы;
 - смотреть токены, скорость (ток/с), задержки поиска и генерации, размер контекста;
-- переключаться между OpenRouter, локальной GGUF-моделью и mock-провайдером.
+- переключаться между локальной Qwen2.5-7B, OpenRouter и mock-провайдером.
         """
     )
     st.markdown("#### Ограничения")
