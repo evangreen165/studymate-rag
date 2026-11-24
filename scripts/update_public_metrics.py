@@ -43,7 +43,7 @@ def main() -> None:
 | Context Precision | {values['prec']} | — | — |
 | Context Recall | {values['rec']} | — | — |
 | Answer Correctness | {values['corr']} | {values['base_corr']} | — |
-| Gold hit (top-k) | {retrieval.get('top_k_6', {}).get('gold_hit', '—')} | — | — |
+| Gold hit (k=4) | {retrieval.get('top_k_4', {}).get('gold_hit', '—')} | — | — |
 
 *p50 = {perf.get('p50_ms', 0) / 1000:.2f} с, p95 = {perf.get('p95_ms', 0) / 1000:.2f} с, RPS = {perf.get('rps', 0):.2f}.*
 """

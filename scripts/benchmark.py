@@ -22,7 +22,7 @@ QUESTIONS = [
 async def one_request(client: httpx.AsyncClient, question: str) -> tuple[bool, float]:
     started = time.perf_counter()
     try:
-        response = await client.post("/chat", json={"question": question, "top_k": 6})
+        response = await client.post("/chat", json={"question": question, "top_k": 4})
         response.raise_for_status()
         ok = True
     except Exception:

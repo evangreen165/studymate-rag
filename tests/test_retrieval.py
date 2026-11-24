@@ -5,7 +5,7 @@ import pytest
 from studymate.chunking import Chunk
 from studymate.config import Settings
 from studymate.index import HashEmbedder, VectorIndex
-from studymate.retrieval import Retriever
+from studymate.retrieval import Retriever, is_noise_chunk
 
 
 @pytest.fixture()
@@ -59,6 +59,19 @@ def test_index_and_retrieve(settings: Settings, tmp_path) -> None:
     filtered = retriever.search("git коммиты", top_k=2, topic_slug="sql")
     assert filtered
     assert all(source.topic_slug == "sql" for source in filtered)
+
+
+def test_noise_filter() -> None:
+    toc = (
+        "ОГЛАВЛЕНИЕ\n"
+        "1. Введение ........................................ 3\n"
+        "2. Полиморфизм ..................................... 11\n"
+        "3. Наследование .................................... 44\n"
+    )
+    assert is_noise_chunk(toc)
+    assert not is_noise_chunk(
+        "Полиморфизм — это способность объекта изменять форму во время выполнения программы."
+    )
 
 
 def test_delete_document(settings: Settings, tmp_path) -> None:

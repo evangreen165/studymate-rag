@@ -23,7 +23,7 @@ def main() -> None:
     dense = Retriever(settings, use_hybrid=False)
 
     result: dict = {}
-    for k in (3, 6, 8):
+    for k in (3, 4, 6, 8):
         hits = [
             hit_ratio(hybrid.search(item.question, top_k=k), item)
             for item in items

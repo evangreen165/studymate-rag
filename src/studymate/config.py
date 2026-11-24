@@ -66,7 +66,7 @@ class Settings(BaseSettings):
     bm25_path: Path = Field(
         default=PROJECT_ROOT / "data" / "bm25_corpus.json", alias="BM25_PATH"
     )
-    top_k: int = 6
+    top_k: int = 4
     fetch_k: int = 24
     mmr_lambda: float = 0.55
     min_retrieval_score: float = 0.05
