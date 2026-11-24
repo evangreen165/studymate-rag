@@ -135,6 +135,7 @@ def collect_vars() -> dict:
         "RPS": f"{perf.get('rps', 0):.2f}" if perf.get("rps") else "—",
         "RAM": f"{perf.get('ram_mb', 0) / 1024:.1f}" if perf.get("ram_mb") else "—",
         "TOPK3_HIT": str(retrieval.get("top_k_3", {}).get("gold_hit", "—")),
+        "TOPK4_HIT": str(retrieval.get("top_k_4", {}).get("gold_hit", "—")),
         "TOPK6_HIT": str(retrieval.get("top_k_6", {}).get("gold_hit", "—")),
         "TOPK8_HIT": str(retrieval.get("top_k_8", {}).get("gold_hit", "—")),
         "DENSE_HIT": str(retrieval.get("dense_only", {}).get("gold_hit", "—")),

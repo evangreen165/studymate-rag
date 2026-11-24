@@ -28,22 +28,26 @@ splitter = SentenceSplitter(
 )
 ```
 
-## Б.2 Гибридный поиск и RRF
+## Б.2 Гибридный поиск: маршрутизация и взвешенное объединение
 
 ```python
+topic, confidence = infer_topic_with_score(question)
+where = {"topic_slug": topic} if confidence >= 4 else None
 dense = index.query(query_embedding, top_k=fetch_k, where=where)
-bm25 = bm25_store.search(question, fetch_k)
+bm25 = bm25_store.search(question, fetch_k * 3, topic if where else None)
 
-dense_rank = {chunk_id: rank for rank, chunk_id in enumerate(dense_ids)}
-bm25_rank = {chunk_id: rank for rank, chunk_id in enumerate(bm25_ids)}
-
-k = 60
-for chunk_id in set(dense_rank) | set(bm25_rank):
-    score = 0.0
-    if chunk_id in dense_rank:
-        score += 1.0 / (k + dense_rank[chunk_id] + 1)
-    if chunk_id in bm25_rank:
-        score += 1.0 / (k + bm25_rank[chunk_id] + 1)
+candidates = [
+    source for source in dense + bm25
+    if not is_noise_chunk(source.text)   # оглавления и указатели
+]
+for source in candidates:
+    source.score = (
+        0.28 * dense_norm(source)
+        + 0.34 * bm25_norm(source)
+        + 0.24 * coverage(question, source)
+        + 0.14 * rrf_norm(source)
+        + heuristic_boost(question, source, topic)
+    )
 ```
 
 ## Б.3 Промпт с цитатами и отказом
@@ -61,7 +65,11 @@ SYSTEM_PROMPT = """Ты — StudyMate, ассистент по учебным м
 
 ```python
 sources = retriever.search(question, top_k=top_k, topic_slug=topic)
-if not sources or max(s.dense_score for s in sources) < settings.min_retrieval_score:
+best_dense = max((s.dense_score for s in sources), default=0.0)
+best_bm25 = max((s.bm25_score for s in sources), default=0.0)
+if not sources or (
+    best_dense < settings.min_retrieval_score and best_bm25 < 1.0
+):
     return RAGResponse(
         request_id=request_id,
         question=question,

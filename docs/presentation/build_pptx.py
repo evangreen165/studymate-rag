@@ -241,7 +241,7 @@ def build() -> None:
     bullets(slide, 7.0, 1.65, 5.8, 4.9, [
         "Корпус: 41 PDF, 15 784 страницы, 7 тем",
         "Индекс: ChromaDB + BM25, USER2-base",
-        "LLM: Llama-3.1-70B через OpenRouter",
+        "LLM: Llama-3.1-70B через OpenRouter; локально — Qwen2.5-7B",
         "API: FastAPI + OpenAPI",
         "UI: Streamlit, история чатов, метрики",
         "Оценка: RAGAS, 30 тестовых вопросов",
@@ -294,7 +294,7 @@ def build() -> None:
     bullets(slide, 9.0, 1.65, 3.8, 4.8, [
         "Streamlit UI: чат, материалы, метрики",
         "FastAPI: валидация, OpenAPI, логи",
-        "RAG: MMR + RRF + цитаты",
+        "RAG: тема + dense/BM25 + MMR + цитаты",
         "ChromaDB: плотный индекс",
         "BM25: все 18 693 чанков",
         "OpenRouter / локальная Qwen",
@@ -303,13 +303,13 @@ def build() -> None:
     # 8 pipeline
     slide = slide_title(prs, "Пайплайн", "Офлайн-индексация и онлайн-ответ", 8)
     picture(slide, IMAGES / "pipeline.png", 0.55, 1.45, w=10.8)
-    textbox(slide, 0.7, 6.55, 12.0, 0.4, "PDF → PyMuPDF → очистка → чанкинг → USER2-base → ChromaDB; все чанки → BM25; запрос → dense + BM25 → RRF → LLM → ответ + источники.", 11, MUTED)
+    textbox(slide, 0.7, 6.55, 12.0, 0.4, "PDF → PyMuPDF → очистка → чанкинг → USER2-base → ChromaDB; все чанки → BM25; запрос → тема → dense + BM25 → фильтр оглавлений → LLM → ответ + источники.", 11, MUTED)
 
     # 9 stack
     slide = slide_title(prs, "Реализация", "Стек, API и интерфейс", 9)
     bullets(slide, 0.7, 1.6, 6.1, 4.9, [
         "Python 3.12, uv, LlamaIndex, ChromaDB",
-        "USER2-base (768d) + BM25 + RRF",
+        "USER2-base (768d) + BM25 + тема",
         "FastAPI + Pydantic + OpenAPI",
         "Streamlit: чат, история, загрузка PDF",
         "Docker Compose: api + ui",
